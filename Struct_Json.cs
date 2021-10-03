@@ -8,12 +8,12 @@ namespace Struct_Json
 {
     public class StructDewrapper<T>
     {
-        public T[] items { get; set; }   // 不能改 items?
+        public T[] items { get; set; }  
     }
 
     public class StructWrapper<T>
     {
-        public T[] items { get; set; }  // 不能改 items?
+        public T[] items { get; set; } 
     }
 
     public class StructJson
