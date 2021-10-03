@@ -148,7 +148,7 @@ namespace VR_Server
             }
             else
             {
-                // 執行不到??
+                // fix
                 Console.WriteLine("No Web Connection!!");
                 return null;
             }
@@ -180,14 +180,12 @@ namespace VR_Server
                 // 客戶端 ip:port
                 remoteEndPoint = mainserver.client.RemoteEndPoint.ToString();
 
-                // lock?
+                // fix
                 client_count = mainserver.clients_data.Count + 1;
 
-                // 涉及 thread 順序
                 // send initial position then client send
                 mainserver.Server_Send(3, mainserver.client, (client_count - 1).ToString());
 
-                // if add start to send  but if role not establish may wrong  need to check
                 mainserver.clients_data[remoteEndPoint] = mainserver.client;
 
                 // print client the condition of the connection 
