@@ -172,7 +172,6 @@ namespace VR_Server
                     break;
                 }
 
-                // change to Asynchronous + threadpool 
                 Thread thread_connect = new Thread(Client_Receive);
                 thread_connect.IsBackground = true;
                 thread_connect.Start(mainserver.client);
