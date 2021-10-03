@@ -116,14 +116,9 @@ namespace Server_Connecter
                 {
                     // get header label
                     Buffer.BlockCopy(get_byte_data, 0, get_byte_header, 0, 3);
-                    //Console.WriteLine(get_byte_header.Length);
 
                     Array.Clear(get_byte_innner, 0, get_byte_innner.Length);
                     Buffer.BlockCopy(get_byte_data, 3, get_byte_innner, 0, get_byte_length - 3);
-                    //Console.WriteLine(get_byte_innner.Length);
-                    //Console.WriteLine(get_byte_header[0]);
-                    //Console.WriteLine(get_byte_header[1]);
-                    //Console.WriteLine(get_byte_header[2]);
                     return (int)get_byte_header[0] + 1;
                 }
                 else {
@@ -287,8 +282,8 @@ namespace Server_Connecter
             }
             catch (Exception ex)
             {
-                //Console.WriteLine(ex);
-                //Console.WriteLine("send ex");
+                Console.WriteLine(ex);
+                Console.WriteLine("send ex");
                 return 0;
             }
         }
