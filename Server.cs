@@ -11,16 +11,10 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using Unity_Data;
 
-// 沒有網際網路連線也可正常 需偵測
-
 namespace VR_Server
 {
     class Program
     {
-        //...danger
-        //static UnityClientStruct unity_client_struct = new UnityClientStruct();
-        //static StructJson js = new StructJson();
-
         // 建立伺服端 1027--> byte size
         static ServerClass mainserver = new ServerClass(1027);
 
@@ -229,37 +223,29 @@ namespace VR_Server
                     {
                         case 1:
                             //Console.WriteLine("工作代號 0: 請求更新玩家資料");
-
-                            //js.BytesFileWrite(connecter.get_byte_innner, "inner_data" + port + ".txt");
-
                             unity_client_struct = js.BytesToStruct<UnityClientStruct>(connecter.get_byte_innner);
                             
                             lock (locker) 
                             {
                                 mainserver.clients_data_struct[addr] = unity_client_struct;
                             }
-
                             break;
                         case 2 :
                             // not yet
                             //Console.WriteLine("工作代號 1: 請求發送訊息給所有客戶端");
-
                             //GetString(Byte[], Int32, Int32)  /包含要解碼之位元組序列的位元組陣列。/要解碼的第一個位元組索引。/要解碼的位元組數。/
                             //connecter.get_message = Encoding.UTF8.GetString(connecter.get_byte_innner, 0, connecter.get_byte_innner.Length);
                             //Console.WriteLine("[ " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss:ff") + " ] \n>> " + connecter.get_message + "\n");
                             break;
                         case 3:
                             //Console.WriteLine("工作代號 2: 請求生成角色");  客戶端已經初始化
-
                             unity_client_struct = js.BytesToStruct<UnityClientStruct>(connecter.get_byte_innner);
 
                             lock (locker)
                             {
-                                // 伺服端初始化角色資料
                                 mainserver.clients_data_struct[addr] = unity_client_struct;
                                 socket_array = mainserver.clients_data.Values.ToArray<Socket>();
                             }
-
                             connecter.Server_Send(4, socket_array, js.StructToBytes<UnityClientStruct>(unity_client_struct), socket_array.Length);
                             break;
                         case 4:
@@ -274,14 +260,12 @@ namespace VR_Server
                         case 5:
                             //Console.WriteLine("工作代號 4: 請求更新其他客戶端物件資料");
                             unity_obj_struct = js.BytesToStruct<UnityObjectStruct>(connecter.get_byte_innner);
-
                             mainserver.object_data[unity_obj_struct.Objname].Data = unity_obj_struct;
 
                             lock (locker)
                             {
                                 socket_array = mainserver.clients_data.Values.ToArray<Socket>();
                             }
-
                             connecter.Server_Send(6,socket_array, connecter.get_byte_innner, socket_array.Length);
                             break;
                     }
