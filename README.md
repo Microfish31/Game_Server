@@ -1,4 +1,4 @@
-# Game_Server
+# Unity Server
 A server is for multiplayer connection.
 
 ## Introduction
