@@ -7,7 +7,7 @@ You can use this project to deploy for your server.
 ## Protocol
 TCP、UDP
 
-## Game Type
+## Type
 For Unity Engine
 
 ## Project
