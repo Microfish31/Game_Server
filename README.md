@@ -13,6 +13,10 @@ For Unity Engine
 ## Project
 VR 遠端虛擬維修操作示範
 
+<a href="https://youtu.be/CHicBLdTSgA">
+<img src="https://github.com/Microfish31/Game_Server/blob/main/Photos/1.PNG" 
+width="400" height="300"></a>
+
 [![IMAGE ALT TEXT HERE](https://github.com/Microfish31/Game_Server/blob/main/Photos/1.PNG)](https://youtu.be/CHicBLdTSgA)
 
 [![IMAGE ALT TEXT HERE](https://github.com/Microfish31/Game_Server/blob/main/Photos/2.PNG)](https://youtu.be/JlvNt6Do9xk)
