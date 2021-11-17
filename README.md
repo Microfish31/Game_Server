@@ -18,7 +18,7 @@ For Unity Engine
 <img src="https://github.com/Microfish31/Game_Server/blob/main/Photos/2.PNG"width="500" height="300">
 </a>
 
-### 握手影片
+### 取軸影片
 <a href="https://youtu.be/dNF8pBgpGFo">
 <img src="https://github.com/Microfish31/Game_Server/blob/main/Photos/3.PNG"width="500" height="300">
 </a>
