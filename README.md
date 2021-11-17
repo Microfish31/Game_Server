@@ -15,7 +15,7 @@ VR 遠端虛擬維修操作示範
 
 <a href="https://youtu.be/CHicBLdTSgA">
 <img src="https://github.com/Microfish31/Game_Server/blob/main/Photos/1.PNG" 
-style="max-width: 70%;"></a>
+width="480" height="300"></a>
 
 [![IMAGE ALT TEXT HERE](https://github.com/Microfish31/Game_Server/blob/main/Photos/1.PNG)](https://youtu.be/CHicBLdTSgA)
 
