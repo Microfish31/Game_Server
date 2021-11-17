@@ -11,16 +11,14 @@ TCP、UDP
 For Unity Engine
 
 ## Project
-### VR 遠端虛擬維修操作示範
+### VR 遠端虛擬維修多人連線互動操作示範
 
-<a href="https://youtu.be/CHicBLdTSgA">
-<img src="https://github.com/Microfish31/Game_Server/blob/main/Photos/1.PNG"width="500" height="300">
-</a>
-
+### 握手
 <a href="https://youtu.be/JlvNt6Do9xk">
 <img src="https://github.com/Microfish31/Game_Server/blob/main/Photos/2.PNG"width="500" height="300">
 </a>
 
+### 取軸
 <a href="https://youtu.be/dNF8pBgpGFo">
 <img src="https://github.com/Microfish31/Game_Server/blob/main/Photos/3.PNG"width="500" height="300">
 </a>
