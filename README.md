@@ -13,12 +13,12 @@ For Unity Engine
 ## Project
 ### VR 遠端虛擬維修多人連線互動操作示範
 
-### 握手
+### 握手影片
 <a href="https://youtu.be/JlvNt6Do9xk">
 <img src="https://github.com/Microfish31/Game_Server/blob/main/Photos/2.PNG"width="500" height="300">
 </a>
 
-### 取軸
+### 握手影片
 <a href="https://youtu.be/dNF8pBgpGFo">
 <img src="https://github.com/Microfish31/Game_Server/blob/main/Photos/3.PNG"width="500" height="300">
 </a>
