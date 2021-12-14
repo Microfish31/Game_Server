@@ -20,14 +20,12 @@ namespace VR_Server
         static ServerTCP TcpServer = new ServerTCP(1027);
         static ServerUDP UdpServer = new ServerUDP(1027);
 
-        // Data
         // 定義集合，存客戶端資料
         static Dictionary<string, Socket> clients_data = new Dictionary<string, Socket> { };
         static Dictionary<string, UnityClientStruct> clients_data_struct = new Dictionary<string, UnityClientStruct> { };
 
         // 定義集合，存取物件資料
         static Dictionary<string, UnityObjectData> object_data = new Dictionary<string, UnityObjectData> { };
-
 
         static void Main(string[] args)
         {
@@ -40,15 +38,10 @@ namespace VR_Server
 
             if (TcpServer.TcpINI(server_ip, server_port) == 1)
             {
-                // Tcp
                 TcpServer.TCPReceiveStart(Watch_Connecting);
-
-                // UDP
                 UdpServer.UdpInI(server_ip, server_port);
                 UdpServer.UdpReceiveStart(UDPGetMsg);
-
                 Console.WriteLine("port >> {0}", UdpServer.local_port);
-                Console.WriteLine("開啟監聽......");
 
                 Socket[] socket_array;
                 UnityClientStruct[] client_array;
@@ -65,7 +58,7 @@ namespace VR_Server
                     }
                     if (client_count != 0)
                         TcpServer.Server_Send(0, socket_array, js.StructToBytes<UnityClientStruct>(client_array), client_count);
-                    Thread.Sleep(50);
+                    Thread.Sleep(30);
                 }
             }
         }
@@ -88,26 +81,16 @@ namespace VR_Server
                     break;
                 }
 
-                // change to Asynchronous + threadpool 
-                //Thread thread_connect = new Thread(Client_Receive);
-                //thread_connect.IsBackground = true;
-                //thread_connect.Start(TcpServer.client);
                 TcpServer.TCPReceiveStart(Client_Receive, TcpServer.client);
 
-                // 客戶端 ip:port
                 remoteEndPoint = TcpServer.client.RemoteEndPoint.ToString();
 
-                // lock?
                 client_count = clients_data.Count + 1;
 
-                // 涉及 thread 順序
-                // send initial position then client send
                 TcpServer.Server_Send(3, TcpServer.client, (client_count - 1).ToString());
 
-                // if add start to send  but if role not establish may wrong  need to check
                 clients_data[remoteEndPoint] = TcpServer.client;
 
-                // print client the condition of the connection 
                 Console.WriteLine("[ " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss:ff") + " ] " + "( " + remoteEndPoint + " ) : Connection Success！ #" + client_count + "\n");
             }
         }
@@ -118,7 +101,7 @@ namespace VR_Server
             connecter.client = client_para as Socket;
             connecter.client.ReceiveBufferSize = 65536;
             connecter.client.SendBufferSize = 65536;
-            connecter.client.ReceiveTimeout = 2000;      // work?
+            connecter.client.ReceiveTimeout = 2000;     
             
             int work_num;
             string addr = connecter.client.RemoteEndPoint.ToString();
@@ -133,17 +116,6 @@ namespace VR_Server
 
             while (true)
             {
-                // Poll the socket for reception with a 10 ms timeout.
-                //if (connecter.client.Poll(200000, SelectMode.SelectRead))
-                //{
-                //        work_num = connecter.Server_Get();
-                //}
-                //else
-                //{
-                //    work_num = 0;
-                //    Console.WriteLine("Time out.");
-                //}
-
                 work_num = connecter.Server_Get();
 
                 if (work_num != 0)
@@ -158,14 +130,12 @@ namespace VR_Server
                             {
                                 clients_data_struct[addr] = unity_client_struct;
                             }
-
                             break;
                         case 2 :
                             //Console.WriteLine("工作代號 1: 請求發送訊息給所有客戶端");
                             break;
                         case 3:
                             //Console.WriteLine("工作代號 2: 請求生成角色");  客戶端已經初始化
-
                             unity_client_struct = js.BytesToStruct<UnityClientStruct>(connecter.get_byte_innner);
 
                             lock (locker)
@@ -198,20 +168,21 @@ namespace VR_Server
                             connecter.Server_Send(6,socket_array, connecter.get_byte_innner, socket_array.Length);
                             break;
                         case 6:
-                            //Console.WriteLine("工作代號 5: 請求更新其他客戶端物件資料(抓取軸)"); 
+                            Console.WriteLine("工作代號 5: 請求更新其他客戶端物件資料(抓取軸)"); 
+                            lock (locker)
+                            {
+                                socket_array = clients_data.Values.ToArray<Socket>();
+                            }
+                            connecter.Server_Send(7, socket_array, "Start Renew Shaft", socket_array.Length);
                             break;
                     }
                 }    
                 else
                 {
-                    // close the error client
                     connecter.client.Close();
-
-                    // remove RemoteEndPoint
                     clients_data.Remove(addr);
                     clients_data_struct.Remove(addr);
 
-                    // print connect error
                     Console.WriteLine("[ " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss:ff") + " ] ( " + addr + " ) : Has been disconnected!！ #" + clients_data.Count + "\n");
 
                     lock (locker)
@@ -219,9 +190,7 @@ namespace VR_Server
                         socket_array = clients_data.Values.ToArray<Socket>();
                     }
 
-                    // send to client to remove data
                     TcpServer.Server_Send(2, socket_array, port, socket_array.Length);
-                    
                     break;
                 }
             }
@@ -243,13 +212,10 @@ namespace VR_Server
             UnityObjectStruct unity_obj_struct = new UnityObjectStruct();
             StructJson js = new StructJson();
             object locker = new Object();
-            Socket[] socket_array;
 
             while (true)
             {
                 work_num = UdpServer.Server_Get();
-
-                //Console.WriteLine(work_num);
 
                 if (work_num != 0)
                 {
@@ -263,9 +229,7 @@ namespace VR_Server
                                 Console.WriteLine("工作代號 0: renew shaft pos");  
                                 unity_obj_struct = js.BytesToStruct<UnityObjectStruct>(UdpServer.get_byte_innner);
                                 object_data[unity_obj_struct.Objname].Data = unity_obj_struct;
-
-                                Console.WriteLine("{0},{1},{2}",unity_obj_struct.Position.X, unity_obj_struct.Position.Y, unity_obj_struct.Position.Z);
-
+                                //Console.WriteLine("{0},{1},{2}",unity_obj_struct.Position.X, unity_obj_struct.Position.Y, unity_obj_struct.Position.Z);
                                 break;
 
                             case 2:

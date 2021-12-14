@@ -3,55 +3,34 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Collections.Generic;
 
 namespace Server_TCP
 {
     public class ServerTCP
     {
-        //建立伺服端
         public Socket server;
         public Socket client;
 
         public int latency;
 
-        // msg type = string
-        public string get_message;
-        public string send_message;
-
-        public int get_byte_length;
-
-        // 用來接客戶端的資料 type  = byte
         public byte[] get_byte_data;
 
         public byte[] get_byte_header;
 
         public byte[] get_byte_innner;
 
-        //用來送客戶端的資料 type  = byte
-        public byte[] send_byte_data;
-
         public byte[] send_byte_header;
 
-        public byte[] send_byte_innner;
-
-        //// 定義集合，存客戶端資料
-        //public Dictionary<string, Socket> clients_data;
-        //public Dictionary<string, UnityClientStruct> clients_data_struct;
-
-        //// 定義集合，存取物件資料
-        //public Dictionary<string, UnityObjectData> object_data;
+        private List<byte[]> sendd;
 
         private int send_ms;
+
         public ServerTCP(int data_size)
         {
             server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
             latency = -1;
-
-            get_message = null;
-            send_message = null;
-
-            get_byte_length = 0;
 
             get_byte_data = new byte[data_size];
 
@@ -59,15 +38,9 @@ namespace Server_TCP
 
             get_byte_innner = new byte[data_size-3];
 
-            send_byte_data = new byte[data_size];
-
             send_byte_header = new byte[3];
 
-            send_byte_innner = new byte[data_size - 3];
-
-            //clients_data = new Dictionary<string, Socket> { };
-            //clients_data_struct = new Dictionary<string, UnityClientStruct> { };
-            //object_data = new Dictionary<string, UnityObjectData> { };
+            sendd = new List<byte[]>();
 
             send_ms = -1;
         }
@@ -84,10 +57,6 @@ namespace Server_TCP
                 server.ReceiveBufferSize = 65536;
                 server.SendBufferSize = 65536;
 
-                // set timeout 10 sec
-                // server.ReceiveTimeout = 10000;
-
-                Console.WriteLine("Sever Set Ok !!");
                 Console.WriteLine("伺服端...運行中...");
                 return 1;
             }
@@ -119,35 +88,19 @@ namespace Server_TCP
             try
             {
                 Array.Clear(get_byte_data, 0, get_byte_data.Length);
+                ReceiveSize(2);
+                UInt16 DataLen = FindDataLen(get_byte_data);
 
-                // server or client timeout let wrong.              accept cummulated?
-                get_byte_length = client.Receive(get_byte_data);
-
-                if(get_byte_length < 1027) {
-                    byte [] a = new byte[1027- get_byte_length];
-                    client.Receive(a);
-                    Buffer.BlockCopy(a, 0, get_byte_data, get_byte_length, 1027 - get_byte_length);
-                }
-
-                //Console.WriteLine("byte_len = " + get_byte_data.Length.ToString());
-
-                if (get_byte_length != 0)
+                if (DataLen != 0)
                 {
-                    // get header label
+                    Array.Clear(get_byte_data, 0, get_byte_data.Length);
+                    ReceiveSize(DataLen);
+
                     Buffer.BlockCopy(get_byte_data, 0, get_byte_header, 0, 3);
-                    //Console.WriteLine(get_byte_header.Length);
-
-                    // latency 高出 bug
                     latency = int.Parse(DateTime.Now.ToString("ffff")) - ((int)get_byte_header[2] * 100 + (int)get_byte_header[1]);
-                    //Console.WriteLine(latency);
 
-                    Array.Clear(get_byte_innner, 0, get_byte_innner.Length);
-                    Buffer.BlockCopy(get_byte_data, 3, get_byte_innner, 0, get_byte_length - 3);
-                    //Console.WriteLine(get_byte_innner.Length);
-                    //Console.WriteLine(get_byte_header[0]);
-                    //Console.WriteLine(get_byte_header[1]);
-                    //Console.WriteLine(get_byte_header[2]);
-
+                    get_byte_innner = new byte[DataLen - 3];
+                    Buffer.BlockCopy(get_byte_data, 3, get_byte_innner, 0, DataLen - 3);
                     return (int)get_byte_header[0] + 1;
                 }
                 else {
@@ -155,11 +108,27 @@ namespace Server_TCP
                     return 0;
                 }
             }
-            catch (Exception ex){
-                //Console.WriteLine(ex);
-                //Console.WriteLine("get ex");
+            catch {
                 return 0;
             }
+        }
+
+        public void ReceiveSize(int len) {
+            int get_len;
+            int count = 0;
+
+            while (len > 0)
+            {
+               byte[] a = new byte[len];
+               get_len = client.Receive(a, len, 0);
+               Buffer.BlockCopy(a, 0, get_byte_data, count, a.Length);
+               len = len - get_len;
+               count = count + get_len;
+            }
+        }
+
+        public UInt16 FindDataLen(byte [] getData) {
+            return BitConverter.ToUInt16(getData, 0);
         }
 
         // send to connected client (string)
@@ -167,32 +136,29 @@ namespace Server_TCP
         {
             try
             {
-                // 資訊處理 
-                Array.Clear(send_byte_data, 0, send_byte_data.Length);
+                sendd.Add(Encoding.UTF8.GetBytes(send_msg));
 
-                // header
+                UInt16 dataLen = (UInt16)(3 + sendd[0].Length);
+
+                sendd.Add(BitConverter.GetBytes(dataLen));
+
                 send_byte_header[0] = 1;
                 send_ms = int.Parse(DateTime.Now.ToString("ffff"));
-                send_byte_header[1] = (byte)(send_ms % 100);
-                send_byte_header[2] = (byte)(send_ms / 100);
+                send_byte_header[1] = (byte) (send_ms % 100);
+                send_byte_header[2] = (byte) (send_ms/100);
+                sendd.Add(send_byte_header);
 
-                Buffer.BlockCopy(send_byte_header, 0, send_byte_data, 0, 3);
-
-                send_message = send_msg;
-
-                // inner data
-                send_byte_innner = Encoding.UTF8.GetBytes(send_message);
-
-                Buffer.BlockCopy(send_byte_innner, 0, send_byte_data, 3, send_byte_innner.Length);
-
-                //傳送資訊 
-                client.Send(send_byte_data);
+                byte[] ss = new byte[2+dataLen];
+                Buffer.BlockCopy(sendd[1], 0, ss, 0, 2);
+                Buffer.BlockCopy(sendd[2], 0, ss, 2, 3);
+                Buffer.BlockCopy(sendd[0], 0, ss, 5, dataLen-3);
+                client.Send(ss);
+                sendd.Clear();
 
                 return 1;
             }
-            catch (Exception ex) {
-                Console.WriteLine(ex);
-                Console.WriteLine("send ex");
+            catch 
+            {
                 return 0;
             }
         }
@@ -202,30 +168,28 @@ namespace Server_TCP
         {
             try
             {
-                // 資訊處理 
-                Array.Clear(send_byte_data, 0, send_byte_data.Length);
+                sendd.Add(Encoding.UTF8.GetBytes(send_msg));
 
-                // header
+                UInt16 dataLen = (UInt16)(3 + sendd[0].Length);
+
+                sendd.Add(BitConverter.GetBytes(dataLen));
+
                 send_byte_header[0] = work_num;
                 send_ms = int.Parse(DateTime.Now.ToString("ffff"));
                 send_byte_header[1] = (byte)(send_ms % 100);
                 send_byte_header[2] = (byte)(send_ms / 100);
+                sendd.Add(send_byte_header);
 
-                Buffer.BlockCopy(send_byte_header, 0, send_byte_data, 0, 3);
-
-                // inner data
-                send_byte_innner = Encoding.UTF8.GetBytes(send_msg);
-
-                Buffer.BlockCopy(send_byte_innner, 0, send_byte_data, 3, send_byte_innner.Length);
-
-                // 資訊傳送
-                target_client.Send(send_byte_data);
-
+                byte[] ss = new byte[2 + dataLen];
+                Buffer.BlockCopy(sendd[1], 0, ss, 0, 2);
+                Buffer.BlockCopy(sendd[2], 0, ss, 2, 3);
+                Buffer.BlockCopy(sendd[0], 0, ss, 5, dataLen - 3);
+                target_client.Send(ss);
+                sendd.Clear();
                 return 1;
             }
-            catch (Exception ex) {
-                Console.WriteLine(ex);
-                Console.WriteLine("send ex");
+            catch
+            { 
                 return 0;
             }
         }
@@ -237,29 +201,28 @@ namespace Server_TCP
             {
                 if (target_clients.Length != 0)
                 {
-                    // 資訊處理 
-                    Array.Clear(send_byte_data, 0, send_byte_data.Length);
-                    // header
+                    sendd.Add(Encoding.UTF8.GetBytes(send_msg));
+
+                    UInt16 dataLen = (UInt16)(3 + sendd[0].Length);
+
+                    sendd.Add(BitConverter.GetBytes(dataLen));
+
                     send_byte_header[0] = work_num;
                     send_ms = int.Parse(DateTime.Now.ToString("ffff"));
                     send_byte_header[1] = (byte)(send_ms % 100);
                     send_byte_header[2] = (byte)(send_ms / 100);
+                    sendd.Add(send_byte_header);
 
-                    //Console.WriteLine(send_byte_header[2]);
-                    Buffer.BlockCopy(send_byte_header, 0, send_byte_data, 0, 3);
-
-                    // inner data
-                    send_byte_innner = Encoding.UTF8.GetBytes(send_msg);
-
-                    Buffer.BlockCopy(send_byte_innner, 0, send_byte_data, 3, send_byte_innner.Length);
-
-                    // 資訊傳送
+                    byte[] ss = new byte[2 + dataLen];
+                    Buffer.BlockCopy(sendd[1], 0, ss, 0, 2);
+                    Buffer.BlockCopy(sendd[2], 0, ss, 2, 3);
+                    Buffer.BlockCopy(sendd[0], 0, ss, 5, dataLen - 3);
 
                     for (int i = 0; i < length; i++)
                     {
-                        target_clients[i].Send(send_byte_data);
+                        target_clients[i].Send(ss);
                     }
-
+                    sendd.Clear();
                     return 1;
                 }
                 else {
@@ -267,10 +230,8 @@ namespace Server_TCP
                     return 0;
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine(ex);
-                Console.WriteLine("send ex");
                 return 0;
             }
         }
@@ -283,30 +244,28 @@ namespace Server_TCP
             {
                 if (target_clients.Length != 0)
                 {
-                    // 資訊處理 
-                    Array.Clear(send_byte_data, 0, send_byte_data.Length);
+                    sendd.Add(send_msg);
 
-                    // header
+                    UInt16 dataLen = (UInt16)(3 + sendd[0].Length);
+
+                    sendd.Add(BitConverter.GetBytes(dataLen));
+
                     send_byte_header[0] = work_num;
                     send_ms = int.Parse(DateTime.Now.ToString("ffff"));
                     send_byte_header[1] = (byte)(send_ms % 100);
                     send_byte_header[2] = (byte)(send_ms / 100);
+                    sendd.Add(send_byte_header);
 
-                    //Console.WriteLine(latency);
-                    Buffer.BlockCopy(send_byte_header, 0, send_byte_data, 0, 3);
-
-                    // inner data
-                    send_byte_innner = send_msg;
-
-                    Buffer.BlockCopy(send_byte_innner, 0, send_byte_data, 3, send_byte_innner.Length);
-
-                    // 資訊傳送
+                    byte[] ss = new byte[2 + dataLen];
+                    Buffer.BlockCopy(sendd[1], 0, ss, 0, 2);
+                    Buffer.BlockCopy(sendd[2], 0, ss, 2, 3);
+                    Buffer.BlockCopy(sendd[0], 0, ss, 5, dataLen - 3);
 
                     for (int i = 0; i < length; i++)
                     {
-                        target_clients[i].Send(send_byte_data);
+                        target_clients[i].Send(ss);
                     }
-
+                    sendd.Clear();
                     return 1;
                 }
                 else
@@ -315,10 +274,8 @@ namespace Server_TCP
                     return 0;
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                //Console.WriteLine(ex);
-                //Console.WriteLine("send ex");
                 return 0;
             }
         }
