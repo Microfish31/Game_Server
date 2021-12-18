@@ -14,13 +14,13 @@ namespace Server_TCP
 
         public int latency;
 
-        public byte[] get_byte_data;
-
-        public byte[] get_byte_header;
-
         public byte[] get_byte_innner;
 
-        public byte[] send_byte_header;
+        private byte[] get_byte_data;
+
+        private byte[] get_byte_header;
+
+        private byte[] send_byte_header;
 
         private List<byte[]> sendd;
 
@@ -35,8 +35,6 @@ namespace Server_TCP
             get_byte_data = new byte[data_size];
 
             get_byte_header = new byte[3];
-
-            get_byte_innner = new byte[data_size-3];
 
             send_byte_header = new byte[3];
 

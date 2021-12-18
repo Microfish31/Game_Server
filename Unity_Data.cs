@@ -100,4 +100,10 @@
             Data.Enable = false;
         }
     }
+
+    public class Msg
+    {
+        public string msg { get; set; }
+        public int port { get; set; }
+    }
 }
