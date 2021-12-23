@@ -23,6 +23,7 @@ namespace Server_UDP
         private int send_ms;
         private string Server_Ip;
         private EndPoint senderRemote;
+        private int trans_data_size;
 
         public ServerUDP(int transdata_size)
         {
@@ -38,8 +39,7 @@ namespace Server_UDP
             local_port = -1;
             Server_Ip = "";
 
-            //UdpServer.ReceiveBufferSize = transdata_size;
-            //UdpServer.SendBufferSize = transdata_size;
+            trans_data_size = transdata_size;
         }
 
 
@@ -51,13 +51,20 @@ namespace Server_UDP
             IPEndPoint sender = new IPEndPoint(IPAddress.Any, 0);
             senderRemote = (EndPoint)sender;
             Server_Ip = server_ip;
-
+            UdpServer.ReceiveBufferSize = trans_data_size;
+            UdpServer.SendBufferSize = trans_data_size;
             GetLocalPort();
         }
 
-        public void GetLocalPort()
+        public int GetLocalPort()
         {
-            local_port = int.Parse((UdpServer.LocalEndPoint as IPEndPoint).Port.ToString());
+            local_port = ((IPEndPoint)UdpServer.LocalEndPoint).Port;
+            return local_port;
+        }
+
+        public int GetRemotePort()
+        {
+            return (senderRemote as IPEndPoint).Port;
         }
 
         public void UdpReceiveStart(ThreadStart Func)
@@ -73,7 +80,7 @@ namespace Server_UDP
             {
                 Array.Clear(get_byte_data, 0, get_byte_data.Length);
                 int DataLen = UdpServer.ReceiveFrom(get_byte_data, ref senderRemote);
-
+        
                 if (DataLen != 0)
                 {
                     Buffer.BlockCopy(get_byte_data, 2, get_byte_header, 0, 3);
@@ -95,17 +102,49 @@ namespace Server_UDP
             }
         }
 
-        public void PortDirection(int client_port)
+        public IPEndPoint PortDirection(int client_port)
         {
             //傳送資訊準備工作
-            ep = new IPEndPoint(IPAddress.Parse(Server_Ip), client_port);
+            return new IPEndPoint(IPAddress.Parse(Server_Ip), client_port);
         }
 
+        // send to target client (byte)
         public UInt16 SendToClient(byte work_num, byte[] send_msg, int client_port)
         {
             try
             {
-                PortDirection(client_port);
+                sendd.Add(send_msg);
+
+                UInt16 dataLen = (UInt16)(3 + sendd[0].Length);
+
+                sendd.Add(BitConverter.GetBytes(dataLen));
+
+                send_byte_header[0] = work_num;
+                send_ms = int.Parse(DateTime.Now.ToString("ffff"));
+                send_byte_header[1] = (byte)(send_ms % 100);
+                send_byte_header[2] = (byte)(send_ms / 100);
+                sendd.Add(send_byte_header);
+
+                byte[] ss = new byte[2 + dataLen];
+                Buffer.BlockCopy(sendd[1], 0, ss, 0, 2);
+                Buffer.BlockCopy(sendd[2], 0, ss, 2, 3);
+                Buffer.BlockCopy(sendd[0], 0, ss, 5, dataLen - 3);
+                ep = PortDirection(client_port);
+                UdpServer.SendTo(ss, ep);
+                sendd.Clear();
+                return 1;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        // send to all target client (byte)
+        public UInt16 SendToClient(byte work_num, byte[] send_msg, EndPoint[] client_port)
+        {
+            try
+            {
 
                 sendd.Add(send_msg);
 
@@ -123,7 +162,11 @@ namespace Server_UDP
                 Buffer.BlockCopy(sendd[1], 0, ss, 0, 2);
                 Buffer.BlockCopy(sendd[2], 0, ss, 2, 3);
                 Buffer.BlockCopy(sendd[0], 0, ss, 5, dataLen - 3);
-                UdpServer.SendTo(ss, ep);
+                for (int i = 0; i < client_port.Length; i++)
+                {
+                    ep = client_port[i];
+                    UdpServer.SendTo(ss, ep);
+                }
                 sendd.Clear();
                 return 1;
             }

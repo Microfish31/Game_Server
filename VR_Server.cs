@@ -23,6 +23,7 @@ namespace VR_Server
         // 定義集合，存客戶端資料
         static Dictionary<string, Socket> clients_socket = new Dictionary<string, Socket> { };
         static Dictionary<string, UnityClientStruct> clients_data_struct = new Dictionary<string, UnityClientStruct> { };
+        static Dictionary<int, IPEndPoint> clients_udpSockets = new Dictionary<int, IPEndPoint> { };
 
         // 定義集合，存取物件資料
         static Dictionary<string, UnityObjectData> object_data = new Dictionary<string, UnityObjectData> { };
@@ -191,6 +192,7 @@ namespace VR_Server
         static void UDPGetMsg()
         {
             int work_num = -1;
+            EndPoint[] clients_port;
             UnityObjectStruct unity_obj_struct = new UnityObjectStruct();
             StructJson js = new StructJson();
             object locker = new Object();
@@ -209,14 +211,18 @@ namespace VR_Server
                             case 1:
                                 //Console.WriteLine("工作代號 0: renew shaft pos");  
                                 unity_obj_struct = js.BytesToStruct<UnityObjectStruct>(UdpServer.get_byte_innner);
+                                unity_obj_struct.Port = UdpServer.GetRemotePort();
                                 object_data[unity_obj_struct.Objname].Data = unity_obj_struct;
-                                Console.WriteLine("{0},{1},{2}",unity_obj_struct.Position.X, unity_obj_struct.Position.Y, unity_obj_struct.Position.Z);
+                                //Console.WriteLine("{0},{1},{2}",unity_obj_struct.Position.X, unity_obj_struct.Position.Y, unity_obj_struct.Position.Z);
+                                clients_port = clients_udpSockets.Values.ToArray<EndPoint>();
+                                js.StructFileWrite<UnityObjectStruct>(unity_obj_struct, "shaft_data.txt");
+                                UdpServer.SendToClient(0, js.StructToBytes<UnityObjectStruct>(unity_obj_struct), clients_port);
                                 break;
-
                             case 2:
                                 //Console.WriteLine("工作代號 1: A new UDP enter");
                                 getMsg = js.BytesToStruct<Msg>(UdpServer.get_byte_innner);
                                 Console.WriteLine(getMsg.msg);
+                                clients_udpSockets[UdpServer.GetRemotePort()] = UdpServer.PortDirection(UdpServer.GetRemotePort());
                                 break;
                             case 3:
                                 Console.WriteLine("工作代號 2: Client Ask Shaft Data");
